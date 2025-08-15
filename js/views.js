@@ -1,215 +1,259 @@
-import { $, $all, toast, modal } from "./ui.js";
+// views.js — Home start + clean tab renders
 
+// ---------- Login ----------
 export function renderLogin(onLogin){
   return `
-  <div class="container">
-    <div class="card" style="max-width:480px; margin:80px auto; padding:20px">
-      <div class="header-hero">
-        <img src="assets/logo.svg" alt="VAULT" width="80" height="24"/>
-        <div>
-          <div class="h1">Welcome back</div>
-          <div class="sub">Sign in to your private VAULT</div>
-        </div>
-      </div>
-      <hr/>
-      <div class="list">
-        <label>Email<input id="email" type="email" placeholder="you@domain.com"/></label>
-        <label>Password<input id="password" type="password" placeholder="••••••••"/></label>
-        <button id="btnLogin">Sign in</button>
-        <div class="small">No self sign-up. Ask your admin to create your account.</div>
+  <div class="main">
+    <div class="card padded">
+      <h2>VAULT — Sign in</h2>
+      <p class="muted">Private access only.</p>
+      <div class="col" style="max-width:380px">
+        <input id="email" type="email" placeholder="Email"/>
+        <input id="password" type="password" placeholder="Password"/>
+        <button id="btnLogin" class="primary">Sign in</button>
       </div>
     </div>
   </div>`;
 }
-
-export function bindLogin(handler){
-  $("#btnLogin")?.addEventListener("click", ()=>{
-    const email = $("#email").value.trim();
-    const password = $("#password").value;
-    handler(email, password);
+export function bindLogin(onLogin){
+  const go = ()=> onLogin(
+    document.getElementById("email").value.trim(),
+    document.getElementById("password").value.trim()
+  );
+  document.getElementById("btnLogin").addEventListener("click", go);
+  ["email","password"].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener("keydown", e=> (e.key==="Enter") && go());
   });
 }
 
+// ---------- Shell ----------
 export function renderShell(user, isAdmin){
   return `
-  <div class="nav">
-    <div class="row">
-      <img src="assets/logo.svg" width="90" height="28"/>
-      <span class="badge">Monarch Secure Suite</span>
+  <header class="header">
+    <div class="brand row">
+      <img src="assets/logo.svg" width="90" height="28" alt="VAULT"/>
+      <strong>Monarch Secure Suite</strong>
     </div>
     <div class="row">
-      ${isAdmin ? `<span class="pill">Admin</span>`:``}
-      <button id="btnGuide">Guide</button>
+      <span class="pill">User: ${user.email}</span>
+      <span class="pill">Role: ${isAdmin ? "Admin" : "Member"}</span>
+      <button id="btnGuide" class="ghost">Guide</button>
       <button id="btnSignOut">Sign out</button>
     </div>
-  </div>
-  <div class="container">
-    <div class="grid">
-      <div class="g-span-8">
-        <div class="card" style="padding:16px">
-          <div class="spread">
-            <div>
-              <div class="h1">Dashboard</div>
-              <div class="sub">Central hub for chat, docs, members & sharing</div>
-            </div>
-            <div class="kpis">
-              <div class="kpi">User: <b>${user?.email||""}</b></div>
-              ${isAdmin ? `<div class="kpi">Role: <b>Admin</b></div>`:`<div class="kpi">Role: <b>Member</b></div>`}
-            </div>
-          </div>
-          <div class="tabbar" style="margin-top:12px">
-            <div class="tab active" data-tab="chats">💬 Chats</div>
-            <div class="tab" data-tab="docs">📄 Documents</div>
-            <div class="tab" data-tab="members">🧭 Members</div>
-            <div class="tab" data-tab="share">🔗 Share</div>
-            ${isAdmin ? `<div class="tab" data-tab="admin">🛡️ Admin</div>`:``}
-          </div>
-          <div id="tabContent" style="margin-top:14px"></div>
-        </div>
-      </div>
-      <div class="g-span-4">
-        <div class="card gradient" style="padding:16px">
-          <div class="h2">Quick Actions</div>
-          <div class="list">
-            <button id="qaNewGroup">New group</button>
-            <button id="qaUploadDoc">Upload document</button>
-            <button id="qaInvite">Copy invite note</button>
-          </div>
-        </div>
-        <div class="card" style="padding:16px; margin-top:16px">
-          <div class="h2">Activity</div>
-          <div class="sub">Recent events (realtime once DB exists)</div>
-          <div class="list" id="activity">
-            <div class="item"><span>Nothing yet.</span><span class="pill">—</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="footer">VAULT © ${new Date().getFullYear()} — Private & Secure</div>
-  </div>
+  </header>
 
-  <div id="modalGuide" class="modal-backdrop">
-    <div class="card modal">
-      <div class="h2">First-run Guide</div>
-      <div class="sub">Admin do this once in Supabase:</div>
-      <ul class="list">
-        <li class="item"><span>Create tables: profiles, groups, group_members, messages</span><span class="pill">10 min</span></li>
-        <li class="item"><span>Create storage bucket: vault-docs (private)</span><span class="pill">2 min</span></li>
-        <li class="item"><span>Enable Realtime on messages</span><span class="pill">1 min</span></li>
-        <li class="item"><span>Set RLS policies (see README-SETUP.md)</span><span class="pill">5 min</span></li>
-      </ul>
-      <div class="row" style="justify-content:flex-end">
-        <button onclick="document.querySelector('#modalGuide').style.display='none'">Close</button>
+  <div class="main">
+    <div class="card padded">
+      <div class="tabs">
+        <div class="tab" data-tab="home">Home</div>
+        <div class="tab" data-tab="chats">Chats</div>
+        <div class="tab" data-tab="docs">Documents</div>
+        <div class="tab" data-tab="members">Members</div>
+        <div class="tab" data-tab="share">Share</div>
+        ${isAdmin ? `<div class="tab" data-tab="admin">Admin</div>` : ``}
       </div>
+      <div id="tabContent"></div>
     </div>
-  </div>
-  `;
+  </div>`;
 }
 
-export function bindShell(on){
-  $("#btnSignOut")?.addEventListener("click", on.signOut);
-  $("#btnGuide")?.addEventListener("click", ()=> modal.open("#modalGuide"));
-  $all(".tab").forEach(t=> t.addEventListener("click", ()=> on.switchTab(t.dataset.tab)));
-  $("#qaNewGroup")?.addEventListener("click", on.newGroup);
-  $("#qaUploadDoc")?.addEventListener("click", ()=> on.switchTab("docs"));
-  $("#qaInvite")?.addEventListener("click", on.copyInvite);
+export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.addEventListener("click", ()=> switchTab(t.dataset.tab));
+  });
+  document.getElementById("btnSignOut")?.addEventListener("click", signOut);
+
+  // Quick actions hooks (if present in current view)
+  document.getElementById("qaNewGroup")?.addEventListener("click", newGroup);
+  document.getElementById("qaInvite")?.addEventListener("click", copyInvite);
 }
 
+// ---------- Tabs ----------
 export function renderTab(tab, state){
-  if(tab==="chats"){
+  if(tab === "home"){
     return `
-      <div class="grid">
-        <div class="g-span-4">
-          <div class="card" style="padding:12px">
-            <div class="spread"><div class="h2">Groups</div><button id="btnCreateGroup">New</button></div>
-            <div id="groupList" class="list">${state.groups.length? state.groups.map(g=>`
-              <div class="item"><span>${g.name}</span><button class="pill" data-gid="${g.id}" data-act="openGroup">Open</button></div>
-            `).join(""): `<div class="item"><span>No groups yet.</span><span class="pill">Create one</span></div>`}</div>
-          </div>
+    <!-- Mobile start: menu tiles -->
+    <div class="only-mobile">
+      <h2 style="margin:2px 0 10px">Dashboard</h2>
+      <div class="tiles">
+        <div class="tile" data-nav="chats">💬 Chats</div>
+        <div class="tile" data-nav="docs">📄 Documents</div>
+        <div class="tile" data-nav="members">👤 Members</div>
+        <div class="tile" data-nav="share">🔗 Share</div>
+        ${state.profile?.is_admin ? `<div class="tile" data-nav="admin">🛡 Admin</div>` : ``}
+      </div>
+    </div>
+
+    <!-- Desktop start: three-column cards -->
+    <div class="only-desktop home-grid">
+      <div class="card padded">
+        <div class="section-title">
+          <span>Groups</span>
+          <button id="btnCreateGroup" class="primary">New</button>
         </div>
-        <div class="g-span-8">
-          <div class="card" style="padding:12px; min-height:300px">
-            <div class="spread"><div class="h2">Chat</div><div class="pill">${state.currentGroup?.name || "No group selected"}</div></div>
-            <div id="chatArea" class="list" style="height:260px; overflow:auto; margin-top:8px">
-              ${state.messages.length? state.messages.map(m=>`
-                <div class="item"><span>${m.sender||"?"}: ${m.content}</span><span class="small">${m.created_at||""}</span></div>
-              `).join(""):`<div class="item"><span>No messages.</span><span class="pill">—</span></div>`}
+        <div id="groupList" class="list">
+          ${renderGroups(state.groups)}
+        </div>
+      </div>
+
+      <div class="card padded">
+        <div class="section-title">
+          <span>Chat</span>
+          <span class="pill">${state.currentGroup?.name || "No group selected"}</span>
+        </div>
+        <div id="messageList">
+          ${renderMessages(state.messages)}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input id="msg" placeholder="Type message..."/>
+          <button id="btnSend" class="primary">Send</button>
+        </div>
+      </div>
+
+      <div class="card padded">
+        <div class="section-title"><span>Quick Actions</span></div>
+        <div class="col">
+          <button id="qaNewGroup">New group</button>
+          <button data-nav="docs">Upload document</button>
+          <button id="qaInvite">Copy invite note</button>
+        </div>
+        <div class="section-title" style="margin-top:14px"><span>Activity</span></div>
+        <div class="muted">Realtime feed will show here later.</div>
+      </div>
+    </div>`;
+  }
+
+  if(tab === "chats"){
+    return `
+    <div class="col" style="gap:14px">
+      <div class="card padded">
+        <div class="section-title">
+          <span>Groups</span>
+          <button id="btnCreateGroup" class="primary">New</button>
+        </div>
+        <div id="groupList" class="list">
+          ${renderGroups(state.groups)}
+        </div>
+      </div>
+
+      <div class="card padded">
+        <div class="section-title">
+          <span>Chat</span>
+          <span class="pill">${state.currentGroup?.name || "No group selected"}</span>
+        </div>
+        <div id="messageList">
+          ${renderMessages(state.messages)}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input id="msg" placeholder="Type message..."/>
+          <button id="btnSend" class="primary">Send</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if(tab === "docs"){
+    return `
+    <div class="card padded">
+      <div class="section-title">
+        <span>Documents</span>
+        <span class="pill">Private bucket: <strong>vault-docs</strong></span>
+      </div>
+      <div class="row">
+        <input id="file" type="file"/>
+        <button id="btnUpload" class="primary">Upload</button>
+      </div>
+      <div id="fileList" class="list files" style="margin-top:12px">
+        ${renderFiles(state.files)}
+      </div>
+    </div>`;
+  }
+
+  if(tab === "members"){
+    return `
+    <div class="card padded">
+      <div class="section-title"><span>Members</span></div>
+      <div id="memberList" class="list">
+        ${(state.members||[]).map(m=>`
+          <div class="item">
+            <div class="meta">
+              <div class="title">${m.full_name||m.id.slice(0,6)}</div>
+              <div class="sub">${m.id}</div>
             </div>
-            <div class="row" style="margin-top:10px">
-              <input id="msg" placeholder="Type message..."/>
-              <button id="btnSend">Send</button>
-            </div>
-          </div>
-        </div>
+          </div>`).join("") || `<div class="muted">No members yet.</div>`}
       </div>
-    `;
+    </div>`;
   }
-  if(tab==="docs"){
+
+  if(tab === "share"){
     return `
-      <div class="card" style="padding:12px">
-        <div class="spread">
-          <div class="h2">Documents</div>
-          <div class="sub">Private bucket: <b>vault-docs</b></div>
-        </div>
-        <div class="row" style="margin:10px 0">
-          <input id="file" type="file"/>
-          <button id="btnUpload">Upload</button>
-        </div>
-        <div class="list" id="fileList">
-          ${state.files.length ? state.files.map(f=>`
-            <div class="item">
-              <span>${f.name}</span>
-              <span class="row">
-                <button class="pill" data-key="${f.key}" data-act="share">Share</button>
-                <button class="pill" data-key="${f.key}" data-act="download">Download</button>
-                <button class="pill" data-key="${f.key}" data-act="delete">Delete</button>
-              </span>
-            </div>
-          `).join("") : `<div class="item"><span>No files yet.</span><span class="pill">—</span></div>`}
+    <div class="card padded">
+      <div class="section-title"><span>Create a private link</span></div>
+      <div class="col">
+        <input id="sharePath" placeholder="Exact storage path e.g. my.pdf"/>
+        <div class="row">
+          <input id="expiry" type="number" min="60" value="3600" style="max-width:180px"/>
+          <span class="pill">seconds</span>
+          <button id="btnMakeLink" class="primary">Create link</button>
         </div>
       </div>
-    `;
+      <div id="shareList" class="list" style="margin-top:12px"></div>
+    </div>`;
   }
-  if(tab==="members"){
+
+  if(tab === "admin"){
     return `
-      <div class="card" style="padding:12px">
-        <div class="spread"><div class="h2">Members</div><div class="sub">Location sharing (placeholder)</div></div>
-        <div class="list">
-          ${state.members.length? state.members.map(m=>`
-            <div class="item"><span>${m.full_name||m.email}</span><span class="pill">${m.last_seen||"—"}</span></div>
-          `).join(""):`<div class="item"><span>No members found.</span><span class="pill">—</span></div>`}
-        </div>
+    <div class="card padded">
+      <div class="section-title"><span>Admin</span></div>
+      <div class="col" style="max-width:420px">
+        <input id="adminUserEmail" type="email" placeholder="Promote user by email"/>
+        <button id="btnMakeAdmin" class="primary">Make admin</button>
+        <button id="btnOpenGuide" class="ghost">Open guide</button>
       </div>
-    `;
+    </div>`;
   }
-  if(tab==="share"){
-    return `
-      <div class="card" style="padding:12px">
-        <div class="h2">Share via temporary link</div>
-        <div class="sub">Create time-limited signed URLs. Optionally add a one-time code.</div>
-        <div class="row" style="margin:10px 0">
-          <input id="sharePath" placeholder="storage object path e.g. docs/filename.pdf"/>
-          <select id="expiry"><option value="3600">1 hour</option><option value="86400">24 hours</option></select>
-          <button id="btnMakeLink">Generate</button>
-        </div>
-        <div class="list" id="shareList"></div>
-      </div>
-    `;
-  }
-  if(tab==="admin"){
-    return `
-      <div class="card" style="padding:12px">
-        <div class="h2">Admin Controls</div>
-        <div class="sub">Manage users, groups, and policies (DB-side). This UI lets you toggle flags.</div>
-        <div class="row" style="margin:10px 0">
-          <input id="adminUserEmail" placeholder="user email to promote"/>
-          <button id="btnMakeAdmin">Make Admin</button>
-        </div>
-        <div class="list">
-          <div class="item"><span>Setup checklist</span><button class="pill" id="btnOpenGuide">Open</button></div>
-        </div>
-      </div>
-    `;
-  }
-  return `<div class="card" style="padding:12px">Unknown tab</div>`;
+
+  return `<div class="muted">Unknown tab.</div>`;
 }
+
+// ---------- Small render helpers ----------
+function renderGroups(groups){
+  if(!groups || !groups.length) return `<div class="muted">No groups yet. Create one.</div>`;
+  return groups.map(g=>`
+    <div class="item">
+      <div class="meta">
+        <div class="title">${g.name}</div>
+        <div class="sub">${new Date(g.created_at||Date.now()).toLocaleString()}</div>
+      </div>
+      <button class="btn" data-act="openGroup" data-gid="${g.id}">Open</button>
+    </div>`).join("");
+}
+
+function renderMessages(msgs){
+  if(!msgs || !msgs.length) return `<div class="muted">No messages.</div>`;
+  return msgs.map(m=>`
+    <div class="msg ${m.sender_id === 'me' ? 'me' : ''}">
+      <div class="bubble">
+        <div><strong>${m.sender||"user"}</strong>: ${escapeHtml(m.content)}</div>
+        <div class="time">${new Date(m.created_at).toLocaleString()}</div>
+      </div>
+    </div>`).join("");
+}
+
+function renderFiles(files){
+  if(!files || !files.length) return `<div class="muted">No documents yet.</div>`;
+  return files.map(f=>`
+    <div class="item" data-key="${f.key}">
+      <div class="meta">
+        <div class="title">${f.name}</div>
+      </div>
+      <div class="row">
+        <button class="btn" data-act="share" data-key="${f.key}">Share</button>
+        <button class="btn" data-act="download" data-key="${f.key}">Download</button>
+        <button class="btn danger" data-act="delete" data-key="${f.key}">Delete</button>
+      </div>
+    </div>`).join("");
+}
+
+function escapeHtml(s=""){ return s.replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }

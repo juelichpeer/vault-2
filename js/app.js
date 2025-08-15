@@ -9,7 +9,7 @@ let supa = null;
 let state = {
   user: null,
   profile: null,
-  tab: "chats",
+  tab: "home",
   groups: [],
   currentGroup: null,
   messages: [],
@@ -165,7 +165,7 @@ async function loadGroups(){
     state.groups = [];
   }
 
-  $("#tabContent").innerHTML = renderTab("chats", state);
+  $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
   $("#groupList")?.addEventListener("click", (e)=>{

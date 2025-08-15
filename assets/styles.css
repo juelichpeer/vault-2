@@ -156,3 +156,29 @@ input::placeholder{ color:#97aacc; }
 
 /* Honor user setting */
 @media (prefers-reduced-motion: reduce){ *{ transition:none!important; animation:none!important; } }
+/* ---------- Home start layout ---------- */
+.only-mobile{ display:block; }
+.only-desktop{ display:none; }
+@media (min-width:980px){
+  .only-mobile{ display:none; }
+  .only-desktop{ display:block; }
+}
+
+/* Keep wrapper single-column; internal grids manage columns */
+.main{ display:block; }
+
+/* 3-column home grid on desktop */
+.home-grid{
+  display:grid; gap:14px;
+  grid-template-columns: 1.4fr 2fr 1.2fr;
+  align-items:start;
+}
+
+/* Menu tiles (mobile) */
+.tiles{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.tile{
+  display:flex; align-items:center; justify-content:center;
+  padding:18px 14px; border:1px solid var(--edge);
+  border-radius:12px; background: var(--panel-2); cursor:pointer; font-weight:600;
+}
+.tile:active{ transform: translateY(1px); }
