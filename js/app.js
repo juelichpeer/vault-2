@@ -288,9 +288,9 @@ async function onFilesAction(e){
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
       const payload = `Link: ${url}\nCode: ${code}\nExpires: 1h`;
 
-      await navigator.clipboard.writeText(payload);
-      alert(`✔ Signed link created\n\n${url}\n\nCode: ${code}\n(also copied to clipboard)`);
-      toast.show("Signed link + code copied");
+      const copied = await copyToClipboard(payload);
+      alert(`✔ Signed link created\n\n${url}\n\nCode: ${code}\n${copied ? "(copied to clipboard)" : "(copy manually)"}`);
+      toast.show(copied ? "Signed link + code copied" : "Signed link ready");
     } catch (err) {
       console.error("share -> createSignedUrl error:", err);
       alert(`Share failed:\n${err?.message || err}`);
@@ -298,6 +298,7 @@ async function onFilesAction(e){
     }
     return;
   }
+
 
   // ---------- DOWNLOAD ----------
   if (act === "download") {
@@ -394,6 +395,34 @@ async function promoteAdmin(){
     toast.show(e?.message || "Update failed");
   }
 }
+
+// =====================================================
+// SECTION: UTILITY — COPY TO CLIPBOARD (WITH SAFARI FALLBACK)
+// =====================================================
+async function copyToClipboard(text){
+  // Try modern API first
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch(_) { /* fall through to legacy */ }
+  }
+  // Legacy fallback (works on Safari/WebKit)
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 
 // =====================================================
 // SECTION: UTILITIES (INVITE COPY)
