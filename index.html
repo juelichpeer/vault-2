@@ -6,11 +6,23 @@
   <title>VAULT — Private Secure App</title>
   <link rel="stylesheet" href="assets/styles.css"/>
   <meta name="color-scheme" content="dark"/>
+  <!-- PWA: viewport + manifest + iOS install -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/assets/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0e14">
 </head>
 <body>
   <noscript>Enable JavaScript to use VAULT.</noscript>
   <script type="module">
     import "./js/app.js";
   </script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+}
+</script>
 </body>
 </html>

@@ -503,6 +503,46 @@ function copyInvite(){
   navigator.clipboard.writeText(txt);
   toast.show("Invite note copied");
 }
+// ---- Push subscription (client side) ----
+import { VAPID_PUBLIC_KEY } from "./config.js";
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64); const out = new Uint8Array(raw.length);
+  for (let i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+async function enableNotifications(){
+  try{
+    if (!('serviceWorker' in navigator)) return toast.show("SW unsupported");
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return toast.show("Notifications blocked");
+
+    const reg = await navigator.serviceWorker.ready;
+    if (!VAPID_PUBLIC_KEY){ return toast.show("Set VAPID_PUBLIC_KEY in js/config.js"); }
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const payload = {
+      user_id: state.user.id,
+      endpoint: sub.endpoint,
+      keys: sub.toJSON().keys
+    };
+    const { error } = await supa.from('push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
+    if (error) throw error;
+
+    toast.show("Notifications enabled");
+  }catch(e){
+    console.error("enableNotifications:", e);
+    toast.show(e?.message || "Enable failed");
+  }
+}
+
 
 // =====================================================
 // SECTION: INITIAL PLACEHOLDER & APP START

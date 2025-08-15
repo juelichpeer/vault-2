@@ -321,3 +321,46 @@ input::placeholder{ color:#97aacc; }
 .chatlist{ gap: 6px; }
 .chatrow{ padding: 10px 12px; }
 .tiles{ grid-template-columns: 1fr 1fr; gap: 10px; }
+/* ======= MOBILE SHELL ======= */
+:root{ --bn-h: 56px; }
+.only-mobile{ display:block !important; }
+.only-desktop{ display:none !important; }
+@media (min-width:980px){
+  .only-mobile{ display:none !important; }
+  .only-desktop{ display:flex !important; }
+}
+.m-header{ position:sticky; top:0; z-index:8; padding:10px 14px; background:linear-gradient(180deg, rgba(16,18,24,.95), rgba(16,18,24,.6)); backdrop-filter:blur(10px); }
+.m-header strong{ font-size:18px; letter-spacing:.2px; }
+
+/* Bottom tab bar (WhatsApp-like) */
+.bottom-nav{
+  position: fixed; left:0; right:0; bottom:0; height: var(--bn-h);
+  display:flex; justify-content: space-around; align-items:center;
+  padding: 0 max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
+  background: rgba(16,18,24,.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,.06); z-index:1000;
+}
+.bottom-nav .bn-item{ flex:1; background:transparent !important; border:0 !important; padding:0 !important; min-width:0;
+  display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; font-size:12px; opacity:.85; }
+.bottom-nav .bn-item span{ font-size:11px; line-height:1; }
+.bottom-nav .bn-item.active{ opacity:1; font-weight:600; }
+.content{ padding-bottom: calc(var(--bn-h) + env(safe-area-inset-bottom) + 12px); }
+@media (min-width:980px){ .content{ padding-bottom:16px; } }
+
+/* WhatsApp-like list density */
+.wa-title{ font-size:32px; font-weight:800; margin:12px 8px 4px; }
+.chatlist{ display:flex; flex-direction:column; gap:2px; }
+.chatrow{ display:flex; gap:12px; align-items:center; padding:12px; border-radius:14px; background:rgba(255,255,255,.03); }
+.chatrow.active{ background:rgba(255,255,255,.06); }
+.chatrow .avatar{ width:44px; height:44px; border-radius:50%; background:#222; display:grid; place-items:center; font-weight:700; }
+.chatrow .meta .title{ font-weight:700; }
+.chatrow .meta .sub{ opacity:.6; font-size:12px; }
+
+/* Chat bubbles */
+#messageList{ display:flex; flex-direction:column; gap:8px; }
+.msg .bubble{ max-width:84%; padding:10px 12px; border-radius:16px; background:rgba(255,255,255,.06); }
+@media (min-width:980px){ .msg .bubble{ max-width:70%; } }
+
+/* Mobile tiles (Home) */
+.tiles{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tiles .tile{ padding:18px 14px; border-radius:16px; background:rgba(255,255,255,.04); text-align:left; font-weight:700; }

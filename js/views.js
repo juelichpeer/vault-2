@@ -97,6 +97,7 @@ export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
   // Quick actions (optional in some tabs)
   document.getElementById("qaNewGroup")?.addEventListener("click", newGroup);
   document.getElementById("qaInvite")?.addEventListener("click", copyInvite);
+  <button id="qaEnablePush">Enable notifications</button>
 }
 
 // ---------- Tabs ----------
