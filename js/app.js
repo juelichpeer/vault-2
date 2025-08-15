@@ -276,28 +276,44 @@ async function onFilesAction(e){
   const key = btn.getAttribute("data-key");
   const act = btn.getAttribute("data-act");
 
-  // ---------- SHARE (Create signed URL) ----------
+  // ---------- SHARE (Create code-gated viewer link) ----------
   if (act === "share") {
     try {
-      const { data, error } = await supa.storage
-        .from("vault-docs")
-        .createSignedUrl(key, 3600); // 1 hour
-      if (error) throw error;
+      const code = prompt("Set an access code (e.g. 6 letters/numbers):")?.trim();
+      if (!code) { toast.show("No code set"); return; }
 
-      const url = data?.signedUrl;
-      const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-      const payload = `Link: ${url}\nCode: ${code}\nExpires: 1h`;
+      const { data: { session } } = await supa.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { toast.show("Sign in again"); return; }
 
-      const copied = await copyToClipboard(payload);
-      alert(`✔ Signed link created\n\n${url}\n\nCode: ${code}\n${copied ? "(copied to clipboard)" : "(copy manually)"}`);
-      toast.show(copied ? "Signed link + code copied" : "Signed link ready");
+      const seconds = 3600; // 1 hour window to redeem
+      const resp = await fetch("/.netlify/functions/createShare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ path: key, seconds, code })
+      });
+
+      const out = await resp.json();
+      if (!resp.ok) throw new Error(out.error || "Failed to create share");
+
+      const viewerUrl = out.viewerUrl;
+      const payload = `Open: ${viewerUrl}\nCode: ${code}\nExpires in: 1h`;
+      // best-effort clipboard (Safari fallback handled by copyToClipboard if you added it)
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(payload); } catch {}
+      }
+      alert(`✔ Share link created\n\n${viewerUrl}\n\nCode: ${code}\n(also copied if your browser allows)`);
+      toast.show("Share link ready");
     } catch (err) {
-      console.error("share -> createSignedUrl error:", err);
-      alert(`Share failed:\n${err?.message || err}`);
+      console.error("create gated share error:", err);
       toast.show(err?.message || "Share failed");
     }
     return;
   }
+
 
 
   // ---------- DOWNLOAD ----------
