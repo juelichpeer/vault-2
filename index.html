@@ -1,28 +1,44 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
+  <meta charset="utf-8">
+  <title>VAULT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>VAULT — Private Secure App</title>
-  <link rel="stylesheet" href="assets/styles.css"/>
-  <meta name="color-scheme" content="dark"/>
-  <!-- PWA: viewport + manifest + iOS install -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="/assets/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b0e14">
+  <meta name="theme-color" content="#0b0e14">
+  <link rel="manifest" href="assets/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/styles.css">
+
+  <!-- Error overlay: shows JS errors on screen -->
+  <script>
+    (function(){
+      function show(msg){
+        var box=document.getElementById('errbox');
+        if(!box){
+          box=document.createElement('div'); box.id='errbox';
+          box.style.cssText='position:fixed;z-index:99999;left:8px;right:8px;bottom:8px;background:#210;'+
+                            'color:#f99;border:1px solid #a33;border-radius:10px;padding:10px;font-family:ui-monospace,monospace;white-space:pre-wrap';
+          document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(box));
+        }
+        box.textContent=String(msg);
+      }
+      window.addEventListener('error', e=> show('Error: '+(e.error?.message||e.message)));
+      window.addEventListener('unhandledrejection', e=> show('Promise rejected: '+(e.reason?.message||e.reason)));
+    })();
+  </script>
 </head>
 <body>
-  <noscript>Enable JavaScript to use VAULT.</noscript>
-  <script type="module">
-    import "./js/app.js";
+  <!-- Minimal root; app.js will render -->
+  <noscript>Please enable JavaScript.</noscript>
+
+  <!-- Load the app (ES modules) -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Register service worker (debug mode) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+    }
   </script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
-}
-</script>
 </body>
 </html>
