@@ -1,18 +1,21 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
-// Load supabase-js from CDN (skypack) dynamically if not already present
-export async function loadSupabase(){
-  if (!window.supabase) {
-    await import("https://esm.sh/@supabase/supabase-js@2.46.1");
-  }
-  const { createClient } = window.supabase;
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+let _client = null;
+
+export async function loadSupabase() {
+  if (_client) return _client;
+
+  // Import the SDK as an ES module and use its exports directly
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.46.1");
+
+  _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
     },
-    realtime: { params: { eventsPerSecond: 5 }}
+    realtime: { params: { eventsPerSecond: 5 } }
   });
-  return client;
+
+  return _client;
 }
