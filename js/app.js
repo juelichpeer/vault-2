@@ -53,7 +53,8 @@ async function onLogin(email, password){
     if(error) throw error;
     toast.show("Signed in");
   }catch(e){
-    toast.show(e.message || "Sign-in failed");
+    console.error("signIn error:", e);
+    toast.show(e?.message || "Sign-in failed");
   }
 }
 
@@ -65,7 +66,7 @@ async function loadProfile(){
     if(error) throw error;
     state.profile = data || { id: state.user.id, full_name: state.user.email, is_admin: false };
   }catch(e){
-    // Table may not exist yet
+    console.warn("loadProfile fallback (likely missing table/policy):", e?.message);
     state.profile = { id: state.user.id, full_name: state.user.email, is_admin: false };
   }
 }
@@ -81,13 +82,17 @@ function renderApp(){
     newGroup: ()=> $("#btnCreateGroup")?.click(),
     copyInvite: copyInvite
   });
-  // Show guide modal first time for admins
   $("#btnGuide")?.addEventListener("click", ()=>{});
 }
 
 async function signOut(){
-  await supa.auth.signOut();
-  toast.show("Signed out");
+  try {
+    await supa.auth.signOut();
+    toast.show("Signed out");
+  } catch (e) {
+    console.error("signOut error:", e);
+    toast.show(e?.message || "Sign-out failed");
+  }
 }
 
 async function switchTab(tab){
@@ -120,10 +125,11 @@ async function switchTab(tab){
 
 async function loadGroups(){
   try{
-    const { data, error } = await supa.from("groups").select("id,name").order("created_at", { ascending:false });
+    const { data, error } = await supa.from("groups").select("id,name,created_at").order("created_at", { ascending:false });
     if(error) throw error;
     state.groups = data || [];
   }catch(e){
+    console.error("loadGroups error:", e);
     state.groups = [];
   }
   $("#tabContent").innerHTML = renderTab("chats", state);
@@ -148,17 +154,23 @@ async function createGroup(){
     toast.show("Group created");
     await loadGroups();
   }catch(e){
-    toast.show("Create failed (tables/policies missing?)");
+    console.error("createGroup error:", e);
+    // Surface the real error so we can fix policies quickly
+    toast.show(e?.message || "Create failed");
   }
 }
 
 async function loadMessages(){
   if(!state.currentGroup){ return; }
   try{
-    const { data, error } = await supa.from("messages").select("id, content, created_at, sender_id").eq("group_id", state.currentGroup.id).order("created_at", { ascending:true });
+    const { data, error } = await supa.from("messages")
+      .select("id, content, created_at, sender_id")
+      .eq("group_id", state.currentGroup.id)
+      .order("created_at", { ascending:true });
     if(error) throw error;
     state.messages = (data||[]).map(m=> ({ ...m, sender: m.sender_id?.slice(0,6) }));
   }catch(e){
+    console.error("loadMessages error:", e);
     state.messages = [];
   }
   $("#tabContent").innerHTML = renderTab("chats", state);
@@ -176,7 +188,8 @@ async function sendMessage(){
     input.value = "";
     await loadMessages();
   }catch(e){
-    toast.show("Send failed (tables/policies missing?)");
+    console.error("sendMessage error:", e);
+    toast.show(e?.message || "Send failed");
   }
 }
 
@@ -186,6 +199,7 @@ async function listFiles(){
     if(error) throw error;
     state.files = (data||[]).map(f=> ({ name: f.name, key: f.name }));
   }catch(e){
+    console.error("listFiles error:", e);
     state.files = [];
   }
   $("#tabContent").innerHTML = renderTab("docs", state);
@@ -203,7 +217,8 @@ async function uploadFile(){
     toast.show("Uploaded");
     await listFiles();
   }catch(e){
-    toast.show("Upload failed (bucket/policies missing?)");
+    console.error("uploadFile error:", e);
+    toast.show(e?.message || "Upload failed");
   }
 }
 
@@ -214,7 +229,7 @@ async function onFilesAction(e){
   const act = btn.getAttribute("data-act");
   if(act==="share"){
     const { data, error } = await supa.storage.from("vault-docs").createSignedUrl(key, 3600);
-    if(error){ toast.show("Failed to sign"); return; }
+    if(error){ console.error("share sign error:", error); toast.show(error.message || "Failed to sign"); return; }
     const url = data?.signedUrl;
     const code = Math.random().toString(36).slice(2,8).toUpperCase();
     const payload = `Link: ${url}\nCode: ${code}\nExpires: 1h`;
@@ -223,13 +238,13 @@ async function onFilesAction(e){
   }
   if(act==="download"){
     const { data, error } = await supa.storage.from("vault-docs").createSignedUrl(key, 600);
-    if(error){ toast.show("Failed to sign"); return; }
+    if(error){ console.error("download sign error:", error); toast.show(error.message || "Failed to sign"); return; }
     window.open(data.signedUrl, "_blank");
   }
   if(act==="delete"){
     if(!confirm("Delete this file?")) return;
     const { error } = await supa.storage.from("vault-docs").remove([key]);
-    if(error){ toast.show("Delete failed"); return; }
+    if(error){ console.error("delete file error:", error); toast.show(error.message || "Delete failed"); return; }
     toast.show("Deleted");
     await listFiles();
   }
@@ -241,6 +256,7 @@ async function loadMembers(){
     if(error) throw error;
     state.members = (data||[]);
   }catch(e){
+    console.error("loadMembers error:", e);
     state.members = [];
   }
   $("#tabContent").innerHTML = renderTab("members", state);
@@ -264,7 +280,8 @@ async function makeShare(){
     $("#shareList").prepend(el);
     toast.show("Share link copied");
   }catch(e){
-    toast.show("Failed to create signed URL (bucket/policies?)");
+    console.error("makeShare error:", e);
+    toast.show(e?.message || "Failed to create signed URL");
   }
 }
 
@@ -272,14 +289,14 @@ async function promoteAdmin(){
   const email = $("#adminUserEmail").value.trim();
   if(!email) return toast.show("Enter an email");
   try{
-    // NOTE: Requires RLS policy allowing admin to update others
     const { data: me } = await supa.from("profiles").select("is_admin").eq("id", state.user.id).maybeSingle();
     if(!me?.is_admin){ return toast.show("Admin only action"); }
-    const { data, error } = await supa.from("profiles").update({ is_admin: true }).eq("id", supa.sql`(select id from auth.users where email=${email})`);
-    if(error) throw error;
-    toast.show("Promoted (if user exists)");
+    // NOTE: sql template isn't available in browser; this would be a future RPC/server op.
+    // For now, surface a clear message.
+    toast.show("Use Supabase SQL to promote users (frontend blocked for security).");
   }catch(e){
-    toast.show("Update failed (policy?)");
+    console.error("promoteAdmin error:", e);
+    toast.show(e?.message || "Update failed");
   }
 }
 
