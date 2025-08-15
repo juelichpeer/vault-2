@@ -1,10 +1,10 @@
-// views.js — Home start + clean tab renders
+// views.js — Mobile WhatsApp-like shell + Desktop GitHub-like shell
 
 // ---------- Login ----------
 export function renderLogin(onLogin){
   return `
   <div class="main">
-    <div class="card padded">
+    <div class="card padded" style="max-width:420px;margin:40px auto">
       <h2>VAULT — Sign in</h2>
       <p class="muted">Private access only.</p>
       <div class="col" style="max-width:380px">
@@ -27,44 +27,74 @@ export function bindLogin(onLogin){
   });
 }
 
-// ---------- Shell ----------
+// ---------- Shell (Desktop: GitHub-like; Mobile: WhatsApp-like) ----------
 export function renderShell(user, isAdmin){
   return `
-  <header class="header">
-    <div class="brand row">
+  <!-- DESKTOP TOPBAR (GitHub-like) -->
+  <header class="topbar only-desktop">
+    <div class="row">
       <img src="assets/logo.svg" width="90" height="28" alt="VAULT"/>
       <strong>Monarch Secure Suite</strong>
     </div>
-    <div class="row">
-      <span class="pill">User: ${user.email}</span>
-      <span class="pill">Role: ${isAdmin ? "Admin" : "Member"}</span>
+    <div class="row" style="gap:10px">
+      <input class="topsearch" placeholder="Search… (not wired yet)"/>
+      <span class="pill">${user.email}</span>
+      <span class="pill">${isAdmin ? "Admin" : "Member"}</span>
       <button id="btnGuide" class="ghost">Guide</button>
       <button id="btnSignOut">Sign out</button>
     </div>
   </header>
 
-  <div class="main">
-    <div class="card padded">
-      <div class="tabs">
-        <div class="tab" data-tab="home">Home</div>
-        <div class="tab" data-tab="chats">Chats</div>
-        <div class="tab" data-tab="docs">Documents</div>
-        <div class="tab" data-tab="members">Members</div>
-        <div class="tab" data-tab="share">Share</div>
-        ${isAdmin ? `<div class="tab" data-tab="admin">Admin</div>` : ``}
-      </div>
-      <div id="tabContent"></div>
+  <!-- MOBILE HEADER (WhatsApp-like) -->
+  <header class="m-header only-mobile">
+    <div class="row">
+      <img src="assets/logo.svg" width="80" height="24" alt="VAULT"/>
+      <strong>VAULT</strong>
     </div>
-  </div>`;
+    <div class="row">
+      <button id="btnGuide" class="ghost">Guide</button>
+      <button id="btnSignOut">Sign out</button>
+    </div>
+  </header>
+
+  <!-- LAYOUT: sidebar + content on desktop -->
+  <div class="layout">
+    <aside class="sidebar only-desktop">
+      <div class="nav-title">Menu</div>
+      <div class="nav-item" data-nav="home">Home</div>
+      <div class="nav-item" data-nav="chats">Chats</div>
+      <div class="nav-item" data-nav="docs">Documents</div>
+      <div class="nav-item" data-nav="members">Members</div>
+      <div class="nav-item" data-nav="share">Share</div>
+      ${isAdmin ? `<div class="nav-item" data-nav="admin">Admin</div>` : ``}
+    </aside>
+
+    <main class="content">
+      <div id="tabContent"></div>
+    </main>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV (WhatsApp-like) -->
+  <nav class="bottom-nav only-mobile">
+    <button class="bn-item" data-nav="home">🏠<span>Home</span></button>
+    <button class="bn-item" data-nav="chats">💬<span>Chats</span></button>
+    <button class="bn-item" data-nav="docs">📄<span>Docs</span></button>
+    <button class="bn-item" data-nav="members">👤<span>Members</span></button>
+    <button class="bn-item" data-nav="share">🔗<span>Share</span></button>
+    ${isAdmin ? `<button class="bn-item" data-nav="admin">🛡<span>Admin</span></button>` : ``}
+  </nav>
+  `;
 }
 
 export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.addEventListener("click", ()=> switchTab(t.dataset.tab));
-  });
   document.getElementById("btnSignOut")?.addEventListener("click", signOut);
 
-  // Quick actions hooks (if present in current view)
+  // All nav buttons (sidebar + bottom)
+  document.querySelectorAll("[data-nav]").forEach(n=>{
+    n.addEventListener("click", ()=> switchTab(n.dataset.nav));
+  });
+
+  // Quick actions (optional in some tabs)
   document.getElementById("qaNewGroup")?.addEventListener("click", newGroup);
   document.getElementById("qaInvite")?.addEventListener("click", copyInvite);
 }
@@ -72,45 +102,28 @@ export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
 // ---------- Tabs ----------
 export function renderTab(tab, state){
   if(tab === "home"){
+    // Desktop: 3-column cards; Mobile: big tiles launcher
     return `
-    <!-- Mobile start: menu tiles -->
-    <div class="only-mobile">
-      <h2 style="margin:2px 0 10px">Dashboard</h2>
-      <div class="tiles">
-        <div class="tile" data-nav="chats">💬 Chats</div>
-        <div class="tile" data-nav="docs">📄 Documents</div>
-        <div class="tile" data-nav="members">👤 Members</div>
-        <div class="tile" data-nav="share">🔗 Share</div>
-        ${state.profile?.is_admin ? `<div class="tile" data-nav="admin">🛡 Admin</div>` : ``}
-      </div>
+    <div class="only-mobile tiles">
+      <button class="tile" data-nav="chats">💬 Chats</button>
+      <button class="tile" data-nav="docs">📄 Documents</button>
+      <button class="tile" data-nav="members">👤 Members</button>
+      <button class="tile" data-nav="share">🔗 Share</button>
+      ${state.profile?.is_admin ? `<button class="tile" data-nav="admin">🛡 Admin</button>` : ``}
     </div>
 
-    <!-- Desktop start: three-column cards -->
     <div class="only-desktop home-grid">
       <div class="card padded">
-        <div class="section-title">
-          <span>Groups</span>
-          <button id="btnCreateGroup" class="primary">New</button>
-        </div>
-        <div id="groupList" class="list">
-          ${renderGroups(state.groups)}
-        </div>
+        <div class="section-title"><span>Groups</span><button id="btnCreateGroup" class="primary">New</button></div>
+        <div id="groupList" class="list">${renderGroups(state.groups)}</div>
       </div>
-
       <div class="card padded">
-        <div class="section-title">
-          <span>Chat</span>
-          <span class="pill">${state.currentGroup?.name || "No group selected"}</span>
-        </div>
-        <div id="messageList">
-          ${renderMessages(state.messages)}
-        </div>
+        <div class="section-title"><span>Chat</span><span class="pill">${state.currentGroup?.name || "No group"}</span></div>
+        <div id="messageList">${renderMessages(state.messages)}</div>
         <div class="row" style="margin-top:10px">
-          <input id="msg" placeholder="Type message..."/>
-          <button id="btnSend" class="primary">Send</button>
+          <input id="msg" placeholder="Type message…"/><button id="btnSend" class="primary">Send</button>
         </div>
       </div>
-
       <div class="card padded">
         <div class="section-title"><span>Quick Actions</span></div>
         <div class="col">
@@ -118,36 +131,23 @@ export function renderTab(tab, state){
           <button data-nav="docs">Upload document</button>
           <button id="qaInvite">Copy invite note</button>
         </div>
-        <div class="section-title" style="margin-top:14px"><span>Activity</span></div>
-        <div class="muted">Realtime feed will show here later.</div>
       </div>
     </div>`;
   }
 
   if(tab === "chats"){
+    // Mobile feel: list first, then chat area
     return `
-    <div class="col" style="gap:14px">
+    <div class="col" style="gap:12px">
       <div class="card padded">
-        <div class="section-title">
-          <span>Groups</span>
-          <button id="btnCreateGroup" class="primary">New</button>
-        </div>
-        <div id="groupList" class="list">
-          ${renderGroups(state.groups)}
-        </div>
+        <div class="section-title"><span>Chats</span><button id="btnCreateGroup" class="primary">New</button></div>
+        <div id="groupList" class="chatlist">${renderChatList(state.groups, state.currentGroup)}</div>
       </div>
-
       <div class="card padded">
-        <div class="section-title">
-          <span>Chat</span>
-          <span class="pill">${state.currentGroup?.name || "No group selected"}</span>
-        </div>
-        <div id="messageList">
-          ${renderMessages(state.messages)}
-        </div>
+        <div class="section-title"><span>Conversation</span><span class="pill">${state.currentGroup?.name || "No group selected"}</span></div>
+        <div id="messageList">${renderMessages(state.messages)}</div>
         <div class="row" style="margin-top:10px">
-          <input id="msg" placeholder="Type message..."/>
-          <button id="btnSend" class="primary">Send</button>
+          <input id="msg" placeholder="Type message…"/><button id="btnSend" class="primary">Send</button>
         </div>
       </div>
     </div>`;
@@ -156,17 +156,9 @@ export function renderTab(tab, state){
   if(tab === "docs"){
     return `
     <div class="card padded">
-      <div class="section-title">
-        <span>Documents</span>
-        <span class="pill">Private bucket: <strong>vault-docs</strong></span>
-      </div>
-      <div class="row">
-        <input id="file" type="file"/>
-        <button id="btnUpload" class="primary">Upload</button>
-      </div>
-      <div id="fileList" class="list files" style="margin-top:12px">
-        ${renderFiles(state.files)}
-      </div>
+      <div class="section-title"><span>Documents</span><span class="pill">vault-docs</span></div>
+      <div class="row"><input id="file" type="file"/><button id="btnUpload" class="primary">Upload</button></div>
+      <div id="fileList" class="list files" style="margin-top:12px">${renderFiles(state.files)}</div>
     </div>`;
   }
 
@@ -191,7 +183,7 @@ export function renderTab(tab, state){
     <div class="card padded">
       <div class="section-title"><span>Create a private link</span></div>
       <div class="col">
-        <input id="sharePath" placeholder="Exact storage path e.g. my.pdf"/>
+        <input id="sharePath" placeholder="Exact storage path e.g. file.pdf"/>
         <div class="row">
           <input id="expiry" type="number" min="60" value="3600" style="max-width:180px"/>
           <span class="pill">seconds</span>
@@ -204,9 +196,9 @@ export function renderTab(tab, state){
 
   if(tab === "admin"){
     return `
-    <div class="card padded">
+    <div class="card padded" style="max-width:520px">
       <div class="section-title"><span>Admin</span></div>
-      <div class="col" style="max-width:420px">
+      <div class="col">
         <input id="adminUserEmail" type="email" placeholder="Promote user by email"/>
         <button id="btnMakeAdmin" class="primary">Make admin</button>
         <button id="btnOpenGuide" class="ghost">Open guide</button>
@@ -217,9 +209,9 @@ export function renderTab(tab, state){
   return `<div class="muted">Unknown tab.</div>`;
 }
 
-// ---------- Small render helpers ----------
+// ---------- small render helpers ----------
 function renderGroups(groups){
-  if(!groups || !groups.length) return `<div class="muted">No groups yet. Create one.</div>`;
+  if(!groups || !groups.length) return `<div class="muted">No groups yet.</div>`;
   return groups.map(g=>`
     <div class="item">
       <div class="meta">
@@ -230,10 +222,22 @@ function renderGroups(groups){
     </div>`).join("");
 }
 
+function renderChatList(groups, current){
+  if(!groups || !groups.length) return `<div class="muted">No chats yet.</div>`;
+  return groups.map(g=>`
+    <div class="chatrow ${current?.id===g.id ? "active" : ""}" data-act="openGroup" data-gid="${g.id}">
+      <div class="avatar">G</div>
+      <div class="meta">
+        <div class="title">${g.name}</div>
+        <div class="sub">${new Date(g.created_at||Date.now()).toLocaleString()}</div>
+      </div>
+    </div>`).join("");
+}
+
 function renderMessages(msgs){
   if(!msgs || !msgs.length) return `<div class="muted">No messages.</div>`;
   return msgs.map(m=>`
-    <div class="msg ${m.sender_id === 'me' ? 'me' : ''}">
+    <div class="msg">
       <div class="bubble">
         <div><strong>${m.sender||"user"}</strong>: ${escapeHtml(m.content)}</div>
         <div class="time">${new Date(m.created_at).toLocaleString()}</div>
@@ -245,9 +249,7 @@ function renderFiles(files){
   if(!files || !files.length) return `<div class="muted">No documents yet.</div>`;
   return files.map(f=>`
     <div class="item" data-key="${f.key}">
-      <div class="meta">
-        <div class="title">${f.name}</div>
-      </div>
+      <div class="meta"><div class="title">${f.name}</div></div>
       <div class="row">
         <button class="btn" data-act="share" data-key="${f.key}">Share</button>
         <button class="btn" data-act="download" data-key="${f.key}">Download</button>

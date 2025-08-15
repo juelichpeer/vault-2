@@ -182,3 +182,81 @@ input::placeholder{ color:#97aacc; }
   border-radius:12px; background: var(--panel-2); cursor:pointer; font-weight:600;
 }
 .tile:active{ transform: translateY(1px); }
+/* --- GitHub-like desktop layout --- */
+.topbar{
+  position:sticky; top:0; z-index:60;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; background:#0c1220; border-bottom:1px solid var(--edge);
+}
+.topbar .topsearch{
+  width:260px; padding:8px 10px; border-radius:8px; border:1px solid var(--edge);
+  background:var(--panel-2); color:var(--text);
+}
+
+.layout{ max-width:1200px; margin:0 auto; padding:14px; display:grid; gap:16px; }
+@media (min-width:980px){
+  .layout{ grid-template-columns: 240px 1fr; }
+}
+.sidebar{
+  position:sticky; top:62px; align-self:start;
+  background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:10px;
+}
+.nav-title{ font-weight:700; margin:6px 6px 8px; color:var(--muted); }
+.nav-item{
+  padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--text);
+}
+.nav-item:hover{ background:var(--panel-2); }
+.nav-item.active{ background:linear-gradient(180deg, var(--accent-2), var(--accent)); color:#0c1220; }
+
+/* --- WhatsApp-like mobile header + bottom bar --- */
+.m-header{
+  position:sticky; top:0; z-index:60;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; background:#0c1220; border-bottom:1px solid var(--edge);
+}
+
+.bottom-nav{
+  position:fixed; bottom:0; left:0; right:0; z-index:60;
+  display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+  background:#0c1220; border-top:1px solid var(--edge);
+}
+.bn-item{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; padding:8px 4px; color:var(--muted); background:transparent; border:0;
+}
+.bn-item.active{ color:#fff; }
+
+/* --- Content --- */
+.content{ min-height: calc(100vh - 120px); }
+.only-mobile{ display:block; }
+.only-desktop{ display:none; }
+@media (min-width:980px){
+  .only-mobile{ display:none; }
+  .only-desktop{ display:block; }
+}
+
+/* --- Home desktop grid (cards side-by-side) --- */
+.home-grid{
+  display:grid; gap:16px; align-items:start;
+  grid-template-columns: 1.3fr 1.7fr 1.0fr;
+}
+
+/* --- Mobile tiles --- */
+.tiles{ display:grid; grid-template-columns:1fr 1fr; gap:12px; padding-bottom:64px; }
+.tile{
+  border:1px solid var(--edge); border-radius:12px; background:var(--panel-2);
+  padding:18px 14px; font-weight:600;
+}
+
+/* --- Chat list rows (WhatsApp-ish) --- */
+.chatlist{ display:flex; flex-direction:column; gap:8px; }
+.chatrow{
+  display:flex; gap:10px; align-items:center; padding:10px;
+  border:1px solid var(--edge); border-radius:10px; background:var(--panel-2); cursor:pointer;
+}
+.chatrow.active{ outline:2px solid var(--accent-2); }
+.chatrow .avatar{
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(180deg, var(--accent-2), var(--accent));
+  display:flex; align-items:center; justify-content:center; color:#0c1220; font-weight:700;
+}
