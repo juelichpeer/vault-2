@@ -1,14 +1,14 @@
-const { createClient } = require("@supabase/supabase-js");
-const crypto = require("crypto");
+import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
 
 const headers = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-exports.handler = async (event) => {
+export async function handler(event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
 
@@ -39,4 +39,4 @@ exports.handler = async (event) => {
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message || String(e) }) };
   }
-};
+}

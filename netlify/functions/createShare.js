@@ -1,14 +1,14 @@
-const { createClient } = require("@supabase/supabase-js");
-const crypto = require("crypto");
+import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
 
 const headers = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-exports.handler = async (event) => {
+export async function handler(event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
 
@@ -18,6 +18,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Missing server env vars" }) };
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
   try {
     const authHeader = event.headers.authorization || event.headers.Authorization || "";
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -41,7 +42,6 @@ exports.handler = async (event) => {
       .insert({ bucket, path, code_hash, expires_at, max_uses: 1, created_by: user.id })
       .select("id")
       .single();
-
     if (insErr) return { statusCode: 500, headers, body: JSON.stringify({ error: insErr.message }) };
 
     const proto = event.headers["x-forwarded-proto"] || "https";
@@ -52,4 +52,4 @@ exports.handler = async (event) => {
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message || String(e) }) };
   }
-};
+}

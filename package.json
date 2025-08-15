@@ -1,0 +1,16 @@
+{
+  "name": "vault-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VAULT static frontend + Netlify Functions",
+  "scripts": {
+    "build": "echo \"no build step\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.46.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
