@@ -127,7 +127,7 @@ async function switchTab(tab){
   // highlight active in sidebar + bottom nav
   $all("[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === tab));
 
-  // highlight top pills (if present)
+  // render current tab + highlight any top pills
   $("#tabContent").innerHTML = renderTab(tab, state);
   $all(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab === tab));
 
@@ -135,16 +135,14 @@ async function switchTab(tab){
   if (tab === "home") {
     // tiles nav
     $all("[data-nav]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.nav)));
-    // quick actions present in home desktop grid
+    // quick actions in home grid
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
     $("#groupList")?.addEventListener("click", (e)=>{
-      const btn = e.target.closest("[data-act='openGroup']");
-      if(btn){
-        const gid = btn.getAttribute("data-gid");
-        state.currentGroup = (state.groups || []).find(g => g.id === gid) || null;
-        loadMessages();
-      }
+      const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
+      if(!btn) return;
+      const gid = btn.getAttribute("data-gid");
+      openGroupById(gid);
     });
     await loadGroups();
   }
@@ -154,7 +152,19 @@ async function switchTab(tab){
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
     $("#chatArea")?.addEventListener("click", (e)=>{});
+    $("#groupList")?.addEventListener("click", (e)=>{
+      const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
+      if(!btn) return;
+      const gid = btn.getAttribute("data-gid");
+      openGroupById(gid);
+    });
     await loadGroups();
+  }
+
+  // ----- MOBILE CHAT DETAIL (WhatsApp-like) -----
+  if (tab === "chat_detail") {
+    $("#btnBackChats")?.addEventListener("click", ()=> switchTab("chats"));
+    $("#btnSend")?.addEventListener("click", sendMessage);
   }
 
   // ----- DOCUMENTS -----
@@ -182,6 +192,26 @@ async function switchTab(tab){
 }
 
 // =====================================================
+// SECTION: CHATS → OPEN GROUP (mobile full-screen / desktop inline)
+// =====================================================
+async function openGroupById(gid){
+  state.currentGroup = (state.groups || []).find(g => g.id === gid) || null;
+  await loadMessages();
+  if (window.innerWidth < 980) {
+    // WhatsApp-like: dedicated screen on mobile
+    await switchTab("chat_detail");
+  } else {
+    // Desktop: keep current tab (home or chats) with messages pane updated
+    if (state.tab !== "home" && state.tab !== "chats") {
+      await switchTab("chats");
+    } else {
+      $("#tabContent").innerHTML = renderTab(state.tab, state);
+      $("#btnSend")?.addEventListener("click", sendMessage);
+    }
+  }
+}
+
+// =====================================================
 // SECTION: CHATS → GROUPS (LIST/CREATE)
 // =====================================================
 async function loadGroups(){
@@ -202,11 +232,10 @@ async function loadGroups(){
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
   $("#groupList")?.addEventListener("click", (e)=>{
-    const btn = e.target.closest("[data-act='openGroup']");
+    const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
     if (!btn) return;
     const gid = btn.getAttribute("data-gid");
-    state.currentGroup = state.groups.find(g=> g.id===gid) || null;
-    loadMessages();
+    openGroupById(gid);
   });
 }
 
@@ -246,7 +275,7 @@ async function loadMessages(){
     state.messages = [];
   }
 
-  // re-render current tab (keeps Home dashboard view if you're on Home)
+  // re-render current tab (keeps Home dashboard if you're on Home)
   $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);

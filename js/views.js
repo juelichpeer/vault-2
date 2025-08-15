@@ -135,6 +135,26 @@ export function renderTab(tab, state){
     </div>`;
   }
 
+  if(tab === "chat_detail"){
+    // Mobile-only full-screen chat (WhatsApp-style)
+    return `
+    <div class="only-mobile col" style="gap:12px">
+      <div class="row">
+        <button id="btnBackChats" class="btn">← Back</button>
+        <span class="pill">${state.currentGroup?.name || "Chat"}</span>
+      </div>
+      <div class="card padded">
+        <div id="messageList">
+          ${renderMessages(state.messages)}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input id="msg" placeholder="Type message…"/>
+          <button id="btnSend" class="primary">Send</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   if(tab === "chats"){
     // Mobile feel: list first, then chat area
     return `
