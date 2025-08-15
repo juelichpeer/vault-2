@@ -9,7 +9,7 @@ let supa = null;
 let state = {
   user: null,
   profile: null,
-  tab: "home",
+  tab: "home",            // default: HOME
   groups: [],
   currentGroup: null,
   messages: [],
@@ -29,7 +29,7 @@ async function init(){
     state.user = session.user;
     await loadProfile();
     renderApp();
-    switchTab("chats");
+    switchTab("home");     // go to HOME after load
   } else {
     renderLoginView();
   }
@@ -39,7 +39,7 @@ async function init(){
       state.user = session.user;
       loadProfile().then(()=>{
         renderApp();
-        switchTab("chats");
+        switchTab("home"); // go to HOME after login
       });
     } else {
       state.user = null;
@@ -123,26 +123,58 @@ function renderApp(){
 // =====================================================
 async function switchTab(tab){
   state.tab = tab;
-  $("#tabContent").innerHTML = renderTab(tab, state);
-  $all(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab===tab));
 
+  // highlight active in sidebar + bottom nav
+  $all("[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === tab));
+
+  // highlight top pills (if present)
+  $("#tabContent").innerHTML = renderTab(tab, state);
+  $all(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab === tab));
+
+  // ----- HOME (tiles + small dashboard) -----
+  if (tab === "home") {
+    // tiles nav
+    $all("[data-nav]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.nav)));
+    // quick actions present in home desktop grid
+    $("#btnCreateGroup")?.addEventListener("click", createGroup);
+    $("#btnSend")?.addEventListener("click", sendMessage);
+    $("#groupList")?.addEventListener("click", (e)=>{
+      const btn = e.target.closest("[data-act='openGroup']");
+      if(btn){
+        const gid = btn.getAttribute("data-gid");
+        state.currentGroup = (state.groups || []).find(g => g.id === gid) || null;
+        loadMessages();
+      }
+    });
+    await loadGroups();
+  }
+
+  // ----- CHATS -----
   if (tab === "chats") {
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
     $("#chatArea")?.addEventListener("click", (e)=>{});
     await loadGroups();
   }
+
+  // ----- DOCUMENTS -----
   if (tab === "docs") {
     $("#btnUpload")?.addEventListener("click", uploadFile);
     $("#fileList")?.addEventListener("click", onFilesAction);
     await listFiles();
   }
+
+  // ----- MEMBERS -----
   if (tab === "members") {
     await loadMembers();
   }
+
+  // ----- SHARE -----
   if (tab === "share") {
     $("#btnMakeLink")?.addEventListener("click", makeShare);
   }
+
+  // ----- ADMIN -----
   if (tab === "admin") {
     $("#btnMakeAdmin")?.addEventListener("click", promoteAdmin);
     $("#btnOpenGuide")?.addEventListener("click", ()=> modal.open("#modalGuide"));
@@ -165,6 +197,7 @@ async function loadGroups(){
     state.groups = [];
   }
 
+  // re-render current tab (home or chats)
   $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
@@ -213,21 +246,22 @@ async function loadMessages(){
     state.messages = [];
   }
 
-  $("#tabContent").innerHTML = renderTab("chats", state);
+  // re-render current tab (keeps Home dashboard view if you're on Home)
+  $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
 }
 
 async function sendMessage(){
   const input = $("#msg");
-  const content = input.value.trim();
+  const content = input?.value?.trim();
   if (!content || !state.currentGroup) return;
   try{
     const { error } = await supa
       .from("messages")
       .insert({ group_id: state.currentGroup.id, sender_id: state.user.id, content });
     if (error) throw error;
-    input.value = "";
+    if (input) input.value = "";
     await loadMessages();
   }catch(e){
     console.error("sendMessage error:", e);
@@ -256,7 +290,7 @@ async function listFiles(){
 }
 
 async function uploadFile(){
-  const f = $("#file").files?.[0];
+  const f = $("#file")?.files?.[0];
   if (!f) { toast.show("Pick a file first"); return; }
   try{
     const path = f.name;
@@ -301,9 +335,8 @@ async function onFilesAction(e){
 
       const viewerUrl = out.viewerUrl;
       const payload = `Open: ${viewerUrl}\nCode: ${code}\nExpires in: 1h`;
-      // best-effort clipboard (Safari fallback handled by copyToClipboard if you added it)
       if (navigator.clipboard && window.isSecureContext) {
-        try { await navigator.clipboard.writeText(payload); } catch {}
+        try { await navigator.clipboard.writeText(payload); } catch {/* ignore */}
       }
       alert(`✔ Share link created\n\n${viewerUrl}\n\nCode: ${code}\n(also copied if your browser allows)`);
       toast.show("Share link ready");
@@ -313,8 +346,6 @@ async function onFilesAction(e){
     }
     return;
   }
-
-
 
   // ---------- DOWNLOAD ----------
   if (act === "download") {
@@ -416,12 +447,10 @@ async function promoteAdmin(){
 // SECTION: UTILITY — COPY TO CLIPBOARD (WITH SAFARI FALLBACK)
 // =====================================================
 async function copyToClipboard(text){
-  // Try modern API first
   if (navigator.clipboard && window.isSecureContext) {
     try { await navigator.clipboard.writeText(text); return true; }
-    catch(_) { /* fall through to legacy */ }
+    catch(_) { /* fall back */ }
   }
-  // Legacy fallback (works on Safari/WebKit)
   try {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -434,11 +463,8 @@ async function copyToClipboard(text){
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
     return ok;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
-
 
 // =====================================================
 // SECTION: UTILITIES (INVITE COPY)
