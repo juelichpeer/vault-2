@@ -1,5 +1,5 @@
 // =====================================================
-// SECTION: IMPORTS & GLOBAL STATE
+// IMPORTS & GLOBAL STATE
 // =====================================================
 import { loadSupabase } from "./supabase.js";
 import { $, $all, toast, modal } from "./ui.js";
@@ -9,7 +9,7 @@ let supa = null;
 let state = {
   user: null,
   profile: null,
-  tab: "home",            // default: HOME
+  tab: "home",
   groups: [],
   currentGroup: null,
   messages: [],
@@ -19,7 +19,7 @@ let state = {
 };
 
 // =====================================================
-// SECTION: APP BOOTSTRAP (INIT & AUTH LISTENER)
+// APP BOOTSTRAP (INIT & AUTH LISTENER)
 // =====================================================
 async function init(){
   supa = await loadSupabase();
@@ -29,7 +29,7 @@ async function init(){
     state.user = session.user;
     await loadProfile();
     renderApp();
-    switchTab("home");     // go to HOME after load
+    switchTab("home");
   } else {
     renderLoginView();
   }
@@ -39,7 +39,7 @@ async function init(){
       state.user = session.user;
       loadProfile().then(()=>{
         renderApp();
-        switchTab("home"); // go to HOME after login
+        switchTab("home");
       });
     } else {
       state.user = null;
@@ -50,16 +50,13 @@ async function init(){
 }
 
 // =====================================================
-// SECTION: AUTH UI (LOGIN VIEW)
+// AUTH UI (LOGIN VIEW) + ACTIONS
 // =====================================================
 function renderLoginView(){
   document.body.innerHTML = renderLogin(onLogin);
   bindLogin(onLogin);
 }
 
-// =====================================================
-// SECTION: AUTH ACTIONS (SIGN IN / OUT)
-// =====================================================
 async function onLogin(email, password){
   try{
     const { error } = await supa.auth.signInWithPassword({ email, password });
@@ -82,7 +79,7 @@ async function signOut(){
 }
 
 // =====================================================
-// SECTION: PROFILE & ADMIN CHECK
+// PROFILE & ADMIN CHECK
 // =====================================================
 function isAdmin(){ return !!state.profile?.is_admin; }
 
@@ -96,13 +93,13 @@ async function loadProfile(){
     if (error) throw error;
     state.profile = data || { id: state.user.id, full_name: state.user.email, is_admin: false };
   }catch(e){
-    console.warn("loadProfile fallback (likely missing table/policy):", e?.message);
+    console.warn("loadProfile fallback:", e?.message);
     state.profile = { id: state.user.id, full_name: state.user.email, is_admin: false };
   }
 }
 
 // =====================================================
-// SECTION: APP SHELL RENDER & TAB WIRING
+// APP SHELL RENDER
 // =====================================================
 function renderApp(){
   document.body.innerHTML = `
@@ -119,100 +116,92 @@ function renderApp(){
 }
 
 // =====================================================
-// SECTION: TAB SWITCH HANDLER
+// TAB SWITCH HANDLER
 // =====================================================
 async function switchTab(tab){
   state.tab = tab;
 
-  // highlight active in sidebar + bottom nav
+  // Highlight active in sidebar + bottom nav
   $all("[data-nav]").forEach(n => n.classList.toggle("active", n.dataset.nav === tab));
 
-  // render current tab + highlight any top pills
+  // Render tab content
   $("#tabContent").innerHTML = renderTab(tab, state);
-  $all(".tab").forEach(t=> t.classList.toggle("active", t.dataset.tab === tab));
 
-  // ----- HOME (tiles + small dashboard) -----
+  // Generic nav inside content (tiles, back buttons)
+  $all("[data-nav]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.nav)));
+
+  // HOME
   if (tab === "home") {
-    // tiles nav
-    $all("[data-nav]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.nav)));
-    // quick actions in home grid
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
-    $("#groupList")?.addEventListener("click", (e)=>{
-      const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
-      if(!btn) return;
-      const gid = btn.getAttribute("data-gid");
-      openGroupById(gid);
-    });
+    $("#groupList")?.addEventListener("click", onGroupListClick);
     await loadGroups();
+    return;
   }
 
-  // ----- CHATS -----
+  // CHATS
   if (tab === "chats") {
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
-    $("#chatArea")?.addEventListener("click", (e)=>{});
-    $("#groupList")?.addEventListener("click", (e)=>{
-      const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
-      if(!btn) return;
-      const gid = btn.getAttribute("data-gid");
-      openGroupById(gid);
-    });
+    $("#groupList")?.addEventListener("click", onGroupListClick);
     await loadGroups();
+    return;
   }
 
-  // ----- MOBILE CHAT DETAIL (WhatsApp-like) -----
-  if (tab === "chat_detail") {
-    $("#btnBackChats")?.addEventListener("click", ()=> switchTab("chats"));
-    $("#btnSend")?.addEventListener("click", sendMessage);
-  }
-
-  // ----- DOCUMENTS -----
+  // DOCS
   if (tab === "docs") {
     $("#btnUpload")?.addEventListener("click", uploadFile);
     $("#fileList")?.addEventListener("click", onFilesAction);
     await listFiles();
+    return;
   }
 
-  // ----- MEMBERS -----
+  // MEMBERS
   if (tab === "members") {
     await loadMembers();
+    return;
   }
 
-  // ----- SHARE -----
+  // SHARE
   if (tab === "share") {
     $("#btnMakeLink")?.addEventListener("click", makeShare);
+    return;
   }
 
-  // ----- ADMIN -----
+  // ADMIN
   if (tab === "admin") {
     $("#btnMakeAdmin")?.addEventListener("click", promoteAdmin);
     $("#btnOpenGuide")?.addEventListener("click", ()=> modal.open("#modalGuide"));
+    return;
+  }
+
+  // Mobile dedicated chat screen
+  if (tab === "chat_detail") {
+    $("#btnSend")?.addEventListener("click", sendMessage);
+    return;
   }
 }
 
-// =====================================================
-// SECTION: CHATS → OPEN GROUP (mobile full-screen / desktop inline)
-// =====================================================
+function onGroupListClick(e){
+  const btn = e.target.closest("[data-act='openGroup']");
+  if (!btn) return;
+  const gid = btn.getAttribute("data-gid");
+  openGroupById(gid);
+}
+
 async function openGroupById(gid){
   state.currentGroup = (state.groups || []).find(g => g.id === gid) || null;
   await loadMessages();
   if (window.innerWidth < 980) {
-    // WhatsApp-like: dedicated screen on mobile
-    await switchTab("chat_detail");
+    await switchTab("chat_detail"); // mobile full-screen chat
   } else {
-    // Desktop: keep current tab (home or chats) with messages pane updated
-    if (state.tab !== "home" && state.tab !== "chats") {
-      await switchTab("chats");
-    } else {
-      $("#tabContent").innerHTML = renderTab(state.tab, state);
-      $("#btnSend")?.addEventListener("click", sendMessage);
-    }
+    $("#tabContent").innerHTML = renderTab(state.tab, state);
+    $("#btnSend")?.addEventListener("click", sendMessage);
   }
 }
 
 // =====================================================
-// SECTION: CHATS → GROUPS (LIST/CREATE)
+// CHATS → GROUPS (LIST/CREATE)
 // =====================================================
 async function loadGroups(){
   try{
@@ -227,16 +216,10 @@ async function loadGroups(){
     state.groups = [];
   }
 
-  // re-render current tab (home or chats)
   $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
-  $("#groupList")?.addEventListener("click", (e)=>{
-    const btn = e.target.closest("[data-act='openGroup']") || e.target.closest(".chatrow");
-    if (!btn) return;
-    const gid = btn.getAttribute("data-gid");
-    openGroupById(gid);
-  });
+  $("#groupList")?.addEventListener("click", onGroupListClick);
 }
 
 async function createGroup(){
@@ -258,7 +241,7 @@ async function createGroup(){
 }
 
 // =====================================================
-// SECTION: CHATS → MESSAGES (LIST/SEND)
+// CHATS → MESSAGES (LIST/SEND)
 // =====================================================
 async function loadMessages(){
   if (!state.currentGroup) return;
@@ -275,10 +258,10 @@ async function loadMessages(){
     state.messages = [];
   }
 
-  // re-render current tab (keeps Home dashboard if you're on Home)
   $("#tabContent").innerHTML = renderTab(state.tab, state);
   $("#btnCreateGroup")?.addEventListener("click", createGroup);
   $("#btnSend")?.addEventListener("click", sendMessage);
+  $("#groupList")?.addEventListener("click", onGroupListClick);
 }
 
 async function sendMessage(){
@@ -299,7 +282,7 @@ async function sendMessage(){
 }
 
 // =====================================================
-// SECTION: DOCUMENTS (LIST/UPLOAD/SHARE/DOWNLOAD/DELETE)
+// DOCUMENTS (LIST/UPLOAD/SHARE/DOWNLOAD/DELETE)
 // =====================================================
 async function listFiles(){
   try{
@@ -339,7 +322,7 @@ async function onFilesAction(e){
   const key = btn.getAttribute("data-key");
   const act = btn.getAttribute("data-act");
 
-  // ---------- SHARE (Create code-gated viewer link) ----------
+  // SHARE (via Netlify function)
   if (act === "share") {
     try {
       const code = prompt("Set an access code (e.g. 6 letters/numbers):")?.trim();
@@ -349,7 +332,7 @@ async function onFilesAction(e){
       const token = session?.access_token;
       if (!token) { toast.show("Sign in again"); return; }
 
-      const seconds = 3600; // 1 hour window to redeem
+      const seconds = 3600;
       const resp = await fetch("/.netlify/functions/createShare", {
         method: "POST",
         headers: {
@@ -358,16 +341,15 @@ async function onFilesAction(e){
         },
         body: JSON.stringify({ path: key, seconds, code })
       });
-
       const out = await resp.json();
       if (!resp.ok) throw new Error(out.error || "Failed to create share");
 
       const viewerUrl = out.viewerUrl;
       const payload = `Open: ${viewerUrl}\nCode: ${code}\nExpires in: 1h`;
       if (navigator.clipboard && window.isSecureContext) {
-        try { await navigator.clipboard.writeText(payload); } catch {/* ignore */}
+        try { await navigator.clipboard.writeText(payload); } catch {}
       }
-      alert(`✔ Share link created\n\n${viewerUrl}\n\nCode: ${code}\n(also copied if your browser allows)`);
+      alert(`✔ Share link created\n\n${viewerUrl}\n\nCode: ${code}`);
       toast.show("Share link ready");
     } catch (err) {
       console.error("create gated share error:", err);
@@ -376,34 +358,26 @@ async function onFilesAction(e){
     return;
   }
 
-  // ---------- DOWNLOAD ----------
+  // DOWNLOAD
   if (act === "download") {
     const { data, error } = await supa.storage.from("vault-docs").createSignedUrl(key, 600);
-    if (error) {
-      console.error("download sign error:", error);
-      toast.show(error.message || "Failed to sign");
-      return;
-    }
+    if (error) { console.error("download sign error:", error); toast.show(error.message || "Failed to sign"); return; }
     window.open(data.signedUrl, "_blank");
     return;
   }
 
-  // ---------- DELETE ----------
+  // DELETE
   if (act === "delete") {
     if (!confirm("Delete this file?")) return;
     const { error } = await supa.storage.from("vault-docs").remove([key]);
-    if (error) {
-      console.error("delete file error:", error);
-      toast.show(error.message || "Delete failed");
-      return;
-    }
+    if (error) { console.error("delete file error:", error); toast.show(error.message || "Delete failed"); return; }
     toast.show("Deleted");
     await listFiles();
   }
 }
 
 // =====================================================
-// SECTION: MEMBERS (LIST)
+// MEMBERS (LIST)
 // =====================================================
 async function loadMembers(){
   try{
@@ -421,7 +395,7 @@ async function loadMembers(){
 }
 
 // =====================================================
-// SECTION: SHARE TAB (MANUAL SIGNED URL BY PATH)
+// SHARE TAB (MANUAL SIGNED URL BY PATH)
 // =====================================================
 async function makeShare(){
   const path = $("#sharePath").value.trim();
@@ -433,8 +407,8 @@ async function makeShare(){
 
     const code = Math.random().toString(36).slice(2,8).toUpperCase();
     const payload = `Link: ${data.signedUrl}\nCode: ${code}\nExpires in: ${seconds}s`;
-
     await navigator.clipboard.writeText(payload);
+
     const entry = { path, url: data.signedUrl, code, seconds };
     state.shares.unshift(entry);
 
@@ -451,7 +425,7 @@ async function makeShare(){
 }
 
 // =====================================================
-// SECTION: ADMIN (PROMOTE USER PLACEHOLDER)
+// ADMIN (PROMOTE USER PLACEHOLDER)
 // =====================================================
 async function promoteAdmin(){
   const email = $("#adminUserEmail").value.trim();
@@ -464,7 +438,7 @@ async function promoteAdmin(){
       .maybeSingle();
     if (!me?.is_admin) { return toast.show("Admin only action"); }
 
-    // Security: promotions should be done via SQL/Edge Function (server-side).
+    // Security: promotions should be done server-side.
     toast.show("Use Supabase SQL to promote users (frontend blocked).");
   }catch(e){
     console.error("promoteAdmin error:", e);
@@ -473,12 +447,11 @@ async function promoteAdmin(){
 }
 
 // =====================================================
-// SECTION: UTILITY — COPY TO CLIPBOARD (WITH SAFARI FALLBACK)
+// UTILITIES
 // =====================================================
 async function copyToClipboard(text){
   if (navigator.clipboard && window.isSecureContext) {
-    try { await navigator.clipboard.writeText(text); return true; }
-    catch(_) { /* fall back */ }
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
   }
   try {
     const ta = document.createElement("textarea");
@@ -487,69 +460,25 @@ async function copyToClipboard(text){
     ta.style.position = "fixed";
     ta.style.top = "-1000px";
     document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
+    ta.focus(); ta.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
     return ok;
   } catch { return false; }
 }
 
-// =====================================================
-// SECTION: UTILITIES (INVITE COPY)
-// =====================================================
 function copyInvite(){
   const txt = `Hey, welcome to VAULT.\nAsk the admin to create your account.\nThen sign in at our private URL.\nSecurity rules: no sharing passwords, use 2FA.`;
   navigator.clipboard.writeText(txt);
   toast.show("Invite note copied");
 }
-// ---- Push subscription (client side) ----
-import { VAPID_PUBLIC_KEY } from "./config.js";
-
-function urlBase64ToUint8Array(base64String){
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64); const out = new Uint8Array(raw.length);
-  for (let i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
-  return out;
-}
-
-async function enableNotifications(){
-  try{
-    if (!('serviceWorker' in navigator)) return toast.show("SW unsupported");
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return toast.show("Notifications blocked");
-
-    const reg = await navigator.serviceWorker.ready;
-    if (!VAPID_PUBLIC_KEY){ return toast.show("Set VAPID_PUBLIC_KEY in js/config.js"); }
-
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
-
-    const payload = {
-      user_id: state.user.id,
-      endpoint: sub.endpoint,
-      keys: sub.toJSON().keys
-    };
-    const { error } = await supa.from('push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
-    if (error) throw error;
-
-    toast.show("Notifications enabled");
-  }catch(e){
-    console.error("enableNotifications:", e);
-    toast.show(e?.message || "Enable failed");
-  }
-}
-
 
 // =====================================================
-// SECTION: INITIAL PLACEHOLDER & APP START
+// INITIAL PLACEHOLDER & APP START
 // =====================================================
 document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh">
   <div class="card" style="padding:20px">
-    <div class="row"><img src="assets/logo.svg" width="90" height="28"/><span class="pill">Loading</span></div>
+    <div class="row"><img src="/assets/logo.svg" width="90" height="28"/><span class="pill">Loading</span></div>
   </div>
 </div>`;
 
