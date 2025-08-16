@@ -9,16 +9,17 @@
   <style>
     :root { --bg:#0b0f16; --card:#151b26; --stroke:#223045; --text:#e7ebf3; --muted:#9fb0cc; --acc:#6ea8fe; }
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 ui-sans-serif,system-ui,Segoe UI}
-    .wrap{max-width:960px;margin:32px auto;padding:0 16px}
+    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
     .card{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:18px;margin:12px 0}
     h1,h2{margin:8px 0 12px} input,select,button{width:100%;padding:12px;border:1px solid var(--stroke);
       background:#0e1420;color:var(--text);border-radius:12px;outline:none}
     button{background:var(--acc);color:#041226;border:none;font-weight:600;cursor:pointer}
-    .grid{display:grid;gap:12px} .two{grid-template-columns:1fr 1fr} .muted{color:var(--muted)}
-    .row{display:flex;gap:8px;align-items:center}
-    .hide{display:none}
+    .grid{display:grid;gap:12px} .two{grid-template-columns:1fr 1fr} .three{grid-template-columns:2fr 1fr 1fr}
+    .muted{color:var(--muted)} .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--stroke);font-size:12px;color:var(--muted)}
-    .ok{color:#7CFF9E} .bad{color:#ff6e6e}
+    .ok{color:#7CFF9E} .bad{color:#ff6e6e} .hide{display:none}
+    table{width:100%;border-collapse:collapse;margin-top:8px} th,td{padding:8px;border-bottom:1px solid var(--stroke)}
+    th{text-align:left;color:var(--muted);font-weight:600}
   </style>
 </head>
 <body>
@@ -41,7 +42,7 @@
       <div class="row">
         <div class="pill">User: <span id="meEmail"></span></div>
         <div class="pill">Org: <code id="orgId"></code></div>
-        <div class="pill">Chat: <code id="chatId"></code></div>
+        <div class="pill">Role: <span id="myRole"></span></div>
         <div style="flex:1"></div>
         <button id="btnLogout" style="max-width:160px">Logout</button>
       </div>
@@ -58,6 +59,30 @@
         <button id="btnInvite">Send Invite</button>
         <div id="inviteMsg" class="muted"></div>
       </div>
+
+      <h2 style="margin-top:18px;">Members</h2>
+      <div id="memberNote" class="muted"></div>
+      <table id="membersTbl">
+        <thead><tr><th>Name</th><th>User ID</th><th>Role</th><th style="width:220px">Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h2 style="margin-top:18px;">Chats</h2>
+      <div class="grid two">
+        <button id="btnCreateChat">Create new chat</button>
+        <select id="memberSelect"><option value="">— select member to add —</option></select>
+      </div>
+      <div class="grid two" style="margin-top:8px">
+        <input id="chatId" placeholder="Current chat id (auto after create)" />
+        <button id="btnAddToChat">Add member to chat</button>
+      </div>
+
+      <h2 style="margin-top:18px;">Passkeys (Face ID / Touch ID)</h2>
+      <div class="grid two">
+        <button id="btnRegisterPasskey">Register this device</button>
+        <button id="btnUnlockPasskey">Unlock with passkey</button>
+      </div>
+      <div id="passkeyMsg" class="muted"></div>
     </div>
 
     <div class="muted" style="margin-top:6px">Status: <span id="status" class="pill"></span></div>
@@ -68,7 +93,6 @@
       window.addEventListener('load', ()=> navigator.serviceWorker.register('/sw.js'))
     }
   </script>
-  <!-- Supabase via CDN; browser-only client -->
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>
