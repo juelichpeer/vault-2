@@ -1,4 +1,4 @@
-// views.js — Mobile WhatsApp-like shell + Desktop GitHub-like shell
+// views.js — Desktop (GitHub-like) + Mobile (WhatsApp-like)
 
 // ---------- Login ----------
 export function renderLogin(onLogin){
@@ -30,14 +30,14 @@ export function bindLogin(onLogin){
 // ---------- Shell (Desktop: GitHub-like; Mobile: WhatsApp-like) ----------
 export function renderShell(user, isAdmin){
   return `
-  <!-- DESKTOP TOPBAR (GitHub-like) -->
+  <!-- DESKTOP TOPBAR -->
   <header class="topbar only-desktop">
     <div class="row">
-      <img src="assets/logo.svg" width="90" height="28" alt="VAULT"/>
+      <img src="/assets/logo.svg" width="90" height="28" alt="VAULT"/>
       <strong>Monarch Secure Suite</strong>
     </div>
     <div class="row" style="gap:10px">
-      <input class="topsearch" placeholder="Search… (not wired yet)"/>
+      <input class="topsearch" placeholder="Search…"/>
       <span class="pill">${user.email}</span>
       <span class="pill">${isAdmin ? "Admin" : "Member"}</span>
       <button id="btnGuide" class="ghost">Guide</button>
@@ -45,10 +45,10 @@ export function renderShell(user, isAdmin){
     </div>
   </header>
 
-  <!-- MOBILE HEADER (WhatsApp-like) -->
+  <!-- MOBILE HEADER -->
   <header class="m-header only-mobile">
     <div class="row">
-      <img src="assets/logo.svg" width="80" height="24" alt="VAULT"/>
+      <img src="/assets/logo.svg" width="80" height="24" alt="VAULT"/>
       <strong>VAULT</strong>
     </div>
     <div class="row">
@@ -57,7 +57,7 @@ export function renderShell(user, isAdmin){
     </div>
   </header>
 
-  <!-- LAYOUT: sidebar + content on desktop -->
+  <!-- LAYOUT -->
   <div class="layout">
     <aside class="sidebar only-desktop">
       <div class="nav-title">Menu</div>
@@ -74,7 +74,7 @@ export function renderShell(user, isAdmin){
     </main>
   </div>
 
-  <!-- MOBILE BOTTOM NAV (WhatsApp-like) -->
+  <!-- MOBILE BOTTOM NAV -->
   <nav class="bottom-nav only-mobile">
     <button class="bn-item" data-nav="home">🏠<span>Home</span></button>
     <button class="bn-item" data-nav="chats">💬<span>Chats</span></button>
@@ -88,22 +88,36 @@ export function renderShell(user, isAdmin){
 
 export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
   document.getElementById("btnSignOut")?.addEventListener("click", signOut);
-
-  // All nav buttons (sidebar + bottom)
   document.querySelectorAll("[data-nav]").forEach(n=>{
     n.addEventListener("click", ()=> switchTab(n.dataset.nav));
   });
-
-  // Quick actions (optional in some tabs)
   document.getElementById("qaNewGroup")?.addEventListener("click", newGroup);
   document.getElementById("qaInvite")?.addEventListener("click", copyInvite);
-  <button id="qaEnablePush">Enable notifications</button>
 }
 
 // ---------- Tabs ----------
 export function renderTab(tab, state){
+  if(tab === "chat_detail"){
+    // Mobile-only full-screen chat
+    return `
+    <div class="only-mobile col" style="gap:12px">
+      <div class="row">
+        <button class="btn" data-nav="chats">← Back</button>
+        <span class="pill">${state.currentGroup?.name || "Chat"}</span>
+      </div>
+      <div class="card padded">
+        <div id="messageList">
+          ${renderMessages(state.messages)}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input id="msg" placeholder="Type message…"/>
+          <button id="btnSend" class="primary">Send</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   if(tab === "home"){
-    // Desktop: 3-column cards; Mobile: big tiles launcher
     return `
     <div class="only-mobile tiles">
       <button class="tile" data-nav="chats">💬 Chats</button>
@@ -136,28 +150,7 @@ export function renderTab(tab, state){
     </div>`;
   }
 
-  if(tab === "chat_detail"){
-    // Mobile-only full-screen chat (WhatsApp-style)
-    return `
-    <div class="only-mobile col" style="gap:12px">
-      <div class="row">
-        <button id="btnBackChats" class="btn">← Back</button>
-        <span class="pill">${state.currentGroup?.name || "Chat"}</span>
-      </div>
-      <div class="card padded">
-        <div id="messageList">
-          ${renderMessages(state.messages)}
-        </div>
-        <div class="row" style="margin-top:10px">
-          <input id="msg" placeholder="Type message…"/>
-          <button id="btnSend" class="primary">Send</button>
-        </div>
-      </div>
-    </div>`;
-  }
-
   if(tab === "chats"){
-    // Mobile feel: list first, then chat area
     return `
     <div class="col" style="gap:12px">
       <div class="card padded">
@@ -230,7 +223,7 @@ export function renderTab(tab, state){
   return `<div class="muted">Unknown tab.</div>`;
 }
 
-// ---------- small render helpers ----------
+// ---------- helpers ----------
 function renderGroups(groups){
   if(!groups || !groups.length) return `<div class="muted">No groups yet.</div>`;
   return groups.map(g=>`
