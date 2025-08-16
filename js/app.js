@@ -135,6 +135,7 @@ async function switchTab(tab){
     $("#btnCreateGroup")?.addEventListener("click", createGroup);
     $("#btnSend")?.addEventListener("click", sendMessage);
     $("#groupList")?.addEventListener("click", onGroupListClick);
+    document.getElementById("qaInstall")?.addEventListener("click", installPWA);
     await loadGroups();
     return;
   }
@@ -483,3 +484,23 @@ document.body.innerHTML = `<div style="display:flex;align-items:center;justify-c
 </div>`;
 
 init();
+
+// =====================================================
+// PWA INSTALL HANDLER (Desktop + Android; iOS uses "Add to Home Screen")
+// =====================================================
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();            // stop the auto prompt
+  deferredInstallPrompt = e;     // store it for our button
+});
+
+async function installPWA(){
+  if (!deferredInstallPrompt) {
+    alert('On iPhone: Share → "Add to Home Screen". On desktop: click the browser install icon.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  try { await deferredInstallPrompt.userChoice; } catch {}
+  deferredInstallPrompt = null;
+}

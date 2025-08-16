@@ -147,7 +147,7 @@ export function renderTab(tab, state){
           <button id="qaNewGroup">New group</button>
           <button data-nav="docs">Upload document</button>
           <button id="qaInvite">Copy invite note</button>
-          <button id="qaEnablePush">Enable notifications</button>
+          <button id="qaInstall">Install app</button>          <button id="qaEnablePush">Enable notifications</button>
         </div>
       </div>
     </div>`;
