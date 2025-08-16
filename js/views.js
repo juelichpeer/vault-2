@@ -1,6 +1,7 @@
-// views.js — Desktop (GitHub-like) + Mobile (WhatsApp-like)
+cat > js/views.js <<'JS'
+/* views.js — mobile WhatsApp-ish + desktop cards */
 
-// ---------- Login ----------
+/* ---------- Login ---------- */
 export function renderLogin(onLogin){
   return `
   <div class="main">
@@ -27,7 +28,7 @@ export function bindLogin(onLogin){
   });
 }
 
-// ---------- Shell (Desktop: GitHub-like; Mobile: WhatsApp-like) ----------
+/* ---------- Shell (Desktop + Mobile) ---------- */
 export function renderShell(user, isAdmin){
   return `
   <!-- DESKTOP TOPBAR -->
@@ -68,7 +69,6 @@ export function renderShell(user, isAdmin){
       <div class="nav-item" data-nav="share">Share</div>
       ${isAdmin ? `<div class="nav-item" data-nav="admin">Admin</div>` : ``}
     </aside>
-
     <main class="content">
       <div id="tabContent"></div>
     </main>
@@ -95,14 +95,14 @@ export function bindShell({ signOut, switchTab, newGroup, copyInvite }){
   document.getElementById("qaInvite")?.addEventListener("click", copyInvite);
 }
 
-// ---------- Tabs ----------
+/* ---------- Tabs ---------- */
 export function renderTab(tab, state){
+  /* Mobile chat-only screen */
   if(tab === "chat_detail"){
-    // Mobile-only full-screen chat
     return `
     <div class="only-mobile col" style="gap:12px">
       <div class="row">
-        <button class="btn" data-nav="chats">← Back</button>
+        <button id="btnBackChats" class="btn" data-nav="chats">← Back</button>
         <span class="pill">${state.currentGroup?.name || "Chat"}</span>
       </div>
       <div class="card padded">
@@ -119,6 +119,7 @@ export function renderTab(tab, state){
 
   if(tab === "home"){
     return `
+    <!-- Mobile tiles -->
     <div class="only-mobile tiles">
       <button class="tile" data-nav="chats">💬 Chats</button>
       <button class="tile" data-nav="docs">📄 Documents</button>
@@ -127,6 +128,7 @@ export function renderTab(tab, state){
       ${state.profile?.is_admin ? `<button class="tile" data-nav="admin">🛡 Admin</button>` : ``}
     </div>
 
+    <!-- Desktop 3-column -->
     <div class="only-desktop home-grid">
       <div class="card padded">
         <div class="section-title"><span>Groups</span><button id="btnCreateGroup" class="primary">New</button></div>
@@ -145,6 +147,7 @@ export function renderTab(tab, state){
           <button id="qaNewGroup">New group</button>
           <button data-nav="docs">Upload document</button>
           <button id="qaInvite">Copy invite note</button>
+          <button id="qaEnablePush">Enable notifications</button>
         </div>
       </div>
     </div>`;
@@ -223,7 +226,7 @@ export function renderTab(tab, state){
   return `<div class="muted">Unknown tab.</div>`;
 }
 
-// ---------- helpers ----------
+/* ---------- helpers ---------- */
 function renderGroups(groups){
   if(!groups || !groups.length) return `<div class="muted">No groups yet.</div>`;
   return groups.map(g=>`
@@ -235,7 +238,6 @@ function renderGroups(groups){
       <button class="btn" data-act="openGroup" data-gid="${g.id}">Open</button>
     </div>`).join("");
 }
-
 function renderChatList(groups, current){
   if(!groups || !groups.length) return `<div class="muted">No chats yet.</div>`;
   return groups.map(g=>`
@@ -247,7 +249,6 @@ function renderChatList(groups, current){
       </div>
     </div>`).join("");
 }
-
 function renderMessages(msgs){
   if(!msgs || !msgs.length) return `<div class="muted">No messages.</div>`;
   return msgs.map(m=>`
@@ -258,7 +259,6 @@ function renderMessages(msgs){
       </div>
     </div>`).join("");
 }
-
 function renderFiles(files){
   if(!files || !files.length) return `<div class="muted">No documents yet.</div>`;
   return files.map(f=>`
@@ -271,5 +271,5 @@ function renderFiles(files){
       </div>
     </div>`).join("");
 }
-
 function escapeHtml(s=""){ return s.replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+JS
