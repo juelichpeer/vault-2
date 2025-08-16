@@ -20,6 +20,8 @@
   "homepage": "https://github.com/juelichpeer/vault-2#readme",
   "dependencies": {
     "@netlify/functions": "^4.2.1",
+    "@simplewebauthn/server": "^13.1.2",
+    "@simplewebauthn/types": "^12.0.0",
     "@supabase/supabase-js": "^2.55.0"
   },
   "devDependencies": {
